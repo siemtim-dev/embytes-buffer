@@ -13,14 +13,16 @@ fn main () {
     // Create a writer, write some bytes but do not commit
     // writer implements DerefMut<Target = [u8]> and can be used as a mutable bytes slice
     let mut writer = buffer.create_writer();
-    writer[0] = 36; // ascii '$'
+    writer[0] = '$' as u8;
+
+    // The writer is dropped without committing so the write has no effect
     drop(writer);
 
     // Create a new writer
     let mut writer = buffer.create_writer();
-    writer[0] = 100; // ascii d
-    writer[1] = 101; // ascii e
-    writer[2] = 102; // ascii f
+    writer[0] = 'd' as u8;
+    writer[1] = 'e' as u8;
+    writer[2] = 'f' as u8;
 
     // Commit that 3 bytes are written
     // writing bytes has only an effect if the written bytes are committed

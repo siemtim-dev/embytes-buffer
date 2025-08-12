@@ -59,11 +59,55 @@ pub struct Buffer<T: AsMut<[u8]> + AsRef<[u8]>> {
 }
 
 /// Creates a new [`Buffer`] that is backed by an owned [`u8`] array with size `N`
+#[deprecated]
 pub fn new_stack_buffer<const N: usize>() -> Buffer<[u8; N]> {
     Buffer::<[u8; N]> {
         source: [0; N],
         read_position: 0,
         write_position: 0,
+    }
+}
+
+impl <const N: usize> Buffer<[u8; N]> {
+
+    /// Creates a new [`Buffer`] that is backed by an owned [`u8`] array with size `N`
+    pub fn new_stack() -> Self {
+        Self {
+            source: [0; N],
+            read_position: 0,
+            write_position: 0,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Buffer<Vec<u8>> {
+
+    /// Creates a new [`Buffer`] that is backed by an owned [`Vec<u8>`]
+    pub fn new_heap(size: usize) -> Self {
+        Self {
+            source: vec![0; size],
+            read_position: 0,
+            write_position: 0,
+        }
+    }
+
+    /// Grows the buffer capacity by `grow_by` bytes
+    pub fn grow(&mut self, grow_by: usize) {
+        self.source.extend(
+            std::iter::repeat_n(0, grow_by)
+        );
+    }
+
+    /// Shrink the buffer capacity by `shrink_by` bytes.
+    /// If this would remove written data, an [`BufferError::NoCapacity`] is returned.
+    pub fn shrink(&mut self, shrink_by: usize) -> Result<(), BufferError> {
+        if self.remaining_capacity() < shrink_by {
+            Err(BufferError::NoCapacity)
+        } else {
+            self.source.truncate(self.source.len().saturating_sub(shrink_by));
+            Ok(())
+        }
     }
 }
 
@@ -377,7 +421,7 @@ impl <T: AsMut<[u8]> + AsRef<[u8]> + Clone> Clone for Buffer<T> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{new_stack_buffer, Buffer, BufferError};
+    use crate::{Buffer, BufferError};
 
     #[test]
     fn test_std_write_high_cap() {
@@ -472,10 +516,12 @@ mod tests {
     #[test]
     fn test_stack_buffer() {
 
-        let mut buf = new_stack_buffer::<4>();
+        let mut buf = Buffer::<[u8; 4]>::new_stack();
 
         buf.write_base(&[1, 2, 3, 4]).unwrap();
 
+        assert!(! buf.has_remaining_capacity());
+        assert_eq!(buf.remaining_len(), 4);
     }
 
     #[test]
@@ -505,5 +551,38 @@ mod tests {
 
         let res = buf.skip(5);
         assert_eq!(res, Err(BufferError::NoData));
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_vec_source_grow() {
+        use std::io::Write;
+
+        let mut buffer = Buffer::new_heap(8);
+        buffer.write_all(&[1, 2, 3, 4, 5, 6, 7, 8]).unwrap();
+
+        assert!(buffer.write_all(&[9]).is_err());
+
+        buffer.grow(1);
+        buffer.write_all(&[9]).unwrap();
+        assert!(buffer.write_all(&[10]).is_err());
+
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_vec_source_shrink() {
+        use std::io::Write;
+
+        let mut buffer = Buffer::new_heap(8);
+        buffer.write_all(&[1, 2, 3, 4]).unwrap();
+        assert_eq!(buffer.remaining_capacity(), 4);
+
+        buffer.shrink(4).unwrap();
+        assert_eq!(buffer.remaining_capacity(), 0);
+        assert!(buffer.write_all(&[5]).is_err());
+
+        assert!(buffer.shrink(1).is_err());
+
     }
 }

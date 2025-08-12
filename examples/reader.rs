@@ -10,7 +10,7 @@ fn main () {
     let mut buffer = Buffer::new(&mut bytes);
 
     // Write some bytes
-    buffer.write_all("abc".as_bytes()).unwrap();
+    buffer.write_all("👌abc".as_bytes()).unwrap();
 
     // try to read to a komma but there is none
     let reader = buffer.create_reader();
@@ -24,7 +24,7 @@ fn main () {
     // try to read to a komma. now there is one
     let reader = buffer.create_reader();
     let result = read_til_komma(&reader);
-    assert_eq!(result, Some("abcdef"));
+    assert_eq!(result, Some("👌abcdef"));
     drop(reader);
 
     assert_eq!(buffer.data(), "1234".as_bytes());
@@ -50,8 +50,10 @@ fn read_til_komma<'a>(reader: &'a impl BufferReader) -> Option<&'a str> {
     if let Some(comma_position) = comma_position {
         let data = &str[..comma_position];
 
+        let bytes_read = data.as_bytes().len() + 1;
+
         // Tell the reader that you have read `data.len() + 1` bytes
-        reader.add_bytes_read(data.len() + 1);
+        reader.add_bytes_read(bytes_read);
         Some(data)
     } else {
         None

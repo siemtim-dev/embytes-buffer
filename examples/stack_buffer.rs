@@ -1,4 +1,4 @@
-use embytes_buffer::new_stack_buffer;
+use embytes_buffer::Buffer;
 use embedded_io::{Read, Write};
 
 
@@ -6,7 +6,7 @@ use embedded_io::{Read, Write};
 fn main () {
 
     // Create a new buffern with an array as byte source on the stack
-    let mut buffer = new_stack_buffer::<1024>();
+    let mut buffer = Buffer::<[u8; 1024]>::new_stack();
 
     // Write some bytes to buffer
     buffer.write_all("hello world".as_bytes()).unwrap();
