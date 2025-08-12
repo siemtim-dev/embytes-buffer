@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Wait for Tets
-      uses: kamilchodola/wait-for-workflow-action@1.1.0
+      uses: kamilchodola/wait-for-workflow-action@1.1.1
       with: 
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         workflow_id: test-action.yml
