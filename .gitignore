@@ -1,0 +1,4 @@
+/target
+
+# Should be ignored for libs, see https://github.com/rust-lang/cargo/issues/315
+Cargo.lock
